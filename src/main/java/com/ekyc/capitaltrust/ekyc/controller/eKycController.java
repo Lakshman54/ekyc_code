@@ -3,6 +3,7 @@ package com.ekyc.capitaltrust.ekyc.controller;
 
 import com.ekyc.capitaltrust.ekyc.DTO.ekycDTO;
 import com.ekyc.capitaltrust.ekyc.service.eKycService;
+import com.ekyc.capitaltrust.ekyc.utilities.DataDecryptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,10 +25,16 @@ public class eKycController {
     @PostMapping({"/decrypt"})
     public String decrypt(@RequestBody String decryptedxml) {
         try {
-            log.info("In decrypt method of eKycController");
-            log.info("decryptedxml::" + decryptedxml);
 
-            return null;
+
+            String responseXML = decryptedxml;
+            DataDecryptor dataDecryptor=new DataDecryptor("SignerPublickey.jks", "Capitaltrust@123".toCharArray(),"te-a8dcf4d6-ff68-47df-bc11-c1ccbf2411ba");
+
+
+
+      String xml= dataDecryptor.decrypt(decryptedxml);
+
+            return xml;
         } catch (Exception var3) {
             Exception e = var3;
             e.printStackTrace();

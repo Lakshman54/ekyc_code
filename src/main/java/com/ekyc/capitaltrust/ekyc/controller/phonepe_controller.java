@@ -1,27 +1,32 @@
 package com.ekyc.capitaltrust.ekyc.controller;
 
 
-import com.ekyc.capitaltrust.ekyc.callback.CallbackPayload;
-import com.ekyc.capitaltrust.ekyc.callback.decode;
 import com.ekyc.capitaltrust.ekyc.model.AppClientDetails;
 import com.ekyc.capitaltrust.ekyc.model.CheckStatusAPIParam;
 import com.ekyc.capitaltrust.ekyc.model.ChecksumInputParam;
 import com.ekyc.capitaltrust.ekyc.model.phonepe;
 import com.ekyc.capitaltrust.ekyc.repository.AppClientDetailsRepository;
 import com.ekyc.capitaltrust.ekyc.repository.phonepeRepository;
+import com.ekyc.capitaltrust.ekyc.utilities.PhonePeCallbackHandler;
 import com.phonepe.sdk.pg.Env;
 import com.phonepe.sdk.pg.common.http.PhonePeResponse;
 import com.phonepe.sdk.pg.payments.v1.PhonePePaymentClient;
 import com.phonepe.sdk.pg.payments.v1.models.request.PgPayRequest;
 import com.phonepe.sdk.pg.payments.v1.models.response.PayPageInstrumentResponse;
 import com.phonepe.sdk.pg.payments.v1.models.response.PgPayResponse;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -38,13 +43,24 @@ class phonepe_controller {
     @Autowired
     phonepeRepository phonepeRepository;
 
+    @Autowired
+    PhonePeCallbackHandler phonePeCallbackHandler;
+    @Autowired
+    private RequestMappingHandlerMapping requestMappingHandlerMapping;
+    @Autowired
+    private HttpServletResponse httpServletResponse;
+    @Qualifier("httpServletRequest")
+    @Autowired
+    private ServletRequest httpServletRequest;
+
     phonepe_controller() {
     }
 
     @GetMapping("/servercallback")
-    public String callback(@RequestBody CallbackPayload callbackPayload) {
+    public void callback() throws IOException {
         System.out.println("Server callback is called");
-        return decode.handleCallback(callbackPayload);
+        phonePeCallbackHandler.doPost((HttpServletRequest) httpServletRequest,httpServletResponse);
+
     }
 
     @PostMapping("/checksomevalue")
@@ -143,7 +159,7 @@ class phonepe_controller {
         long amount = 100L;
         String merchantUserId = "loanId";
         String callbackurl = "http://localhost:8080/phonepe/servercallback";
-        String redirecturl = "https://www.merchant.com/redirect";
+        String redirecturl = "http://localhost:8080/phonepe/servercallback";
         String redirectMode = "REDIRECT";
         PgPayRequest pgPayRequest = PgPayRequest.PayPagePayRequestBuilder().amount(amount).merchantId(merchantId).merchantTransactionId(merchantTransactionId).callbackUrl(callbackurl).merchantUserId(merchantUserId).redirectUrl(redirecturl).redirectMode(redirectMode).build();
         boolean shouldPublishEvents = true;
@@ -153,6 +169,9 @@ class phonepe_controller {
         String url = payPageInstrumentResponse.getRedirectInfo().getUrl();
         return payResponse;
     }
+
+
+
 
     @GetMapping("/validate")
     public boolean verifyValidity() {
